@@ -28,6 +28,9 @@
 #include "../Lib/ili9341_v2/ILI9341_STM32_Driver.h"
 #include "../Lib/ili9341_v2/ILI9341_GFX.h"
 #include "../Lib/bme280/bmp280.h"
+//#include "../Lib/ili9341_v2/snow_tiger.h"
+//#include "../Lib/ili9341_v2/1231.c"
+#include "../Lib/ili9341_v2/fonts/font_Nunito.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -116,8 +119,9 @@ int main(void)
 //  ILI9341_WriteString(0, 0, "1", Font_16x26, ILI9341_RED, ILI9341_BLACK);
   //V2
   ILI9341_V2_Init();
+//  ILI9341_DrawImage(0, 0, 240, 320, gimp_image.pixel_data);
   ILI9341_Set_Rotation(SCREEN_HORIZONTAL_2);
-  ILI9341_Fill_Screen(BLACK);
+
 
   bmp280_init_default_params(&bmp280.params);
   bmp280.addr = BMP280_I2C_ADDRESS_0;
@@ -179,7 +183,7 @@ int main(void)
 		uint8_t pressure_s[256];
 		uint8_t humidity_s[256];
 
-		sprintf((char *)temp_s,"Temperature: %.2f C", temperature);
+		sprintf((char *)temp_s,"Температура: %.2f C", temperature);
 		sprintf((char *)pressure_s,"Pressure: %.2f Pa", pressure);
 		sprintf((char *)humidity_s,"Humidity: %.2f", humidity);
 
