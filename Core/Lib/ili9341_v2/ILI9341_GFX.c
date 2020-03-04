@@ -270,6 +270,7 @@ void ILI9341_Draw_FontChar(char Character, uint8_t X, uint8_t Y, uint16_t Colour
 	GFXfont newFont = {};
 	newFont.glyph = &glyph;
 	newFont.bitmap = (uint8_t*)font.data;
+	newFont.first = font.index1_first;
 //	c -= (uint8_t)font->first;
 }
 

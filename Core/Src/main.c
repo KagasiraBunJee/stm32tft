@@ -29,8 +29,9 @@
 #include "../Lib/ili9341_v2/ILI9341_GFX.h"
 #include "../Lib/bme280/bmp280.h"
 //#include "../Lib/ili9341_v2/snow_tiger.h"
+#include "../Lib/ili9341_v2/math.h"
 //#include "../Lib/ili9341_v2/1231.c"
-#include "../Lib/ili9341_v2/fonts/font_Nunito.h"
+//#include "../Lib/ili9341_v2/fonts/font_Nunito.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -61,6 +62,8 @@ float pressure, temperature, humidity;
 
 uint16_t size;
 uint8_t Data[256];
+
+bool displayShow = true;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -75,6 +78,17 @@ static void MX_I2C1_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+void HAL_GPIO_EXTI_Callback	(uint16_t GPIO_Pin)
+{
+	HAL_GPIO_TogglePin(GPIOF, GPIO_PIN_9);
+}
+
+void initDisplay()
+{
+	  ILI9341_V2_Init();
+	  ILI9341_DrawImage(0, 0, 240, 320, snow_tiger1);
+	  ILI9341_Set_Rotation(SCREEN_HORIZONTAL_2);
+}
 
 /* USER CODE END 0 */
 
@@ -118,23 +132,22 @@ int main(void)
 //  ILI9341_WriteString(0, 0, "some text", Font_16x26, ILI9341_RED, ILI9341_BLACK);
 //  ILI9341_WriteString(0, 0, "1", Font_16x26, ILI9341_RED, ILI9341_BLACK);
   //V2
-  ILI9341_V2_Init();
-//  ILI9341_DrawImage(0, 0, 240, 320, gimp_image.pixel_data);
-  ILI9341_Set_Rotation(SCREEN_HORIZONTAL_2);
-
-
-  bmp280_init_default_params(&bmp280.params);
-  bmp280.addr = BMP280_I2C_ADDRESS_0;
-  bmp280.i2c = &hi2c1;
-  while (!bmp280_init(&bmp280, &bmp280.params)) {
-  		size = sprintf((char *)Data, "BMP280 initialization failed\n");
-  		ILI9341_Draw_Text(Data, 0, 0, RED, 10, BLACK);
-//  		HAL_UART_Transmit(&huart1, Data, size, 1000);
-  		HAL_Delay(2000);
+  if (displayShow) {
+	  initDisplay();
+	  bmp280_init_default_params(&bmp280.params);
+	    bmp280.addr = BMP280_I2C_ADDRESS_0;
+	    bmp280.i2c = &hi2c1;
+	    while (!bmp280_init(&bmp280, &bmp280.params)) {
+	    		size = sprintf((char *)Data, "BMP280 initialization failed\n");
+	    		ILI9341_Draw_Text(Data, 0, 0, RED, 10, BLACK);
+	  //  		HAL_UART_Transmit(&huart1, Data, size, 1000);
+	    		HAL_Delay(2000);
+	    }
+	    bool bme280p = bmp280.id == BME280_CHIP_ID;
+	    size = sprintf((char *)Data, "BMP280: found %s\n", bme280p ? "BME280" : "BMP280");
+	    ILI9341_Draw_Text(Data, 0, 0, RED, 1, BLACK);
   }
-  bool bme280p = bmp280.id == BME280_CHIP_ID;
-  size = sprintf((char *)Data, "BMP280: found %s\n", bme280p ? "BME280" : "BMP280");
-  ILI9341_Draw_Text(Data, 0, 0, RED, 1, BLACK);
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -171,26 +184,29 @@ int main(void)
 //		  HAL_GPIO_WritePin(GPIOF, GPIO_PIN_9, GPIO_PIN_SET);
 //		  HAL_GPIO_WritePin(GPIOF, GPIO_PIN_10, GPIO_PIN_SET);
 //	  }
-		HAL_Delay(100);
-		while (!bmp280_read_float(&bmp280, &temperature, &pressure, &humidity)) {
-			size = sprintf((char *)Data,
-					"Temperature/pressure reading failed\n");
-			ILI9341_Draw_Text(Data, 0, 0, RED, 1, BLACK);
-			HAL_Delay(2000);
-		}
+	  if (displayShow) {
+		  HAL_Delay(100);
+		  while (!bmp280_read_float(&bmp280, &temperature, &pressure, &humidity)) {
+			  size = sprintf((char *)Data,
+					  "Temperature/pressure reading failed\n");
+			  ILI9341_Draw_Text(Data, 0, 0, RED, 1, BLACK);
+			  HAL_Delay(2000);
+		  }
 
-		uint8_t temp_s[256];
-		uint8_t pressure_s[256];
-		uint8_t humidity_s[256];
+		  uint8_t temp_s[256];
+		  uint8_t pressure_s[256];
+		  uint8_t humidity_s[256];
 
-		sprintf((char *)temp_s,"Температура: %.2f C", temperature);
-		sprintf((char *)pressure_s,"Pressure: %.2f Pa", pressure);
-		sprintf((char *)humidity_s,"Humidity: %.2f", humidity);
+		  sprintf((char *)temp_s,"Температура: %.2f C", temperature);
+		  sprintf((char *)pressure_s,"Pressure: %.2f Pa", pressure);
+		  sprintf((char *)humidity_s,"Humidity: %.2f", humidity);
 
-		ILI9341_Draw_Text(temp_s, 0, 0, RED, 1, BLACK);
-		ILI9341_Draw_Text(pressure_s, 0, 20, RED, 1, BLACK);
-		ILI9341_Draw_Text(humidity_s, 0, 40, RED, 1, BLACK);
-		HAL_Delay(2000);
+		  ILI9341_Draw_Text(temp_s, 0, 0, RED, 1, BLACK);
+		  ILI9341_Draw_Text(pressure_s, 0, 20, RED, 1, BLACK);
+		  ILI9341_Draw_Text(humidity_s, 0, 40, RED, 1, BLACK);
+		  HAL_Delay(2000);
+	  }
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -355,6 +371,9 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOF, GPIO_PIN_7, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOF, GPIO_PIN_9|GPIO_PIN_10, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
@@ -365,6 +384,19 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(XPT_CS_PIN_GPIO_Port, XPT_CS_PIN_Pin, GPIO_PIN_SET);
+
+  /*Configure GPIO pin : PF7 */
+  GPIO_InitStruct.Pin = GPIO_PIN_7;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+  HAL_GPIO_Init(GPIOF, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : Button_3_Pin */
+  GPIO_InitStruct.Pin = Button_3_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(Button_3_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PF9 PF10 */
   GPIO_InitStruct.Pin = GPIO_PIN_9|GPIO_PIN_10;
@@ -406,6 +438,13 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(XPT_CS_PIN_GPIO_Port, &GPIO_InitStruct);
+
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI9_5_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
+
+  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 
 }
 
